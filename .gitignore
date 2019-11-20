@@ -1,5 +1,6 @@
 priv.txt
 secret.yaml
+.DS_Store
 
 # ignore mavens target dir
 */target/**
