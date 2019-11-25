@@ -28,7 +28,6 @@ import org.apache.camel.component.aws.s3.S3Constants;
 import java.util.HashMap;
 import java.util.Map;
 
-
 /**
  * A simple Camel REST DSL route that implements the greetings service.
  * 
@@ -44,24 +43,10 @@ public class Route extends RouteBuilder {
         errorHandler(deadLetterChannel("direct:errorLog"));
         
         from("direct:errorLog")
-                .log(LoggingLevel.ERROR, simple("${exception.message}").getText())
-                .log(LoggingLevel.ERROR, simple("${exception.stacktrace}").getText());
-    //     <route>
-    //     <from uri="direct:myDLC"/>
-    //     <log logName="notifications" loggingLevel="ERROR"
-    //               message="Exception from notification Camel route" />
-    //     <to uri="activemq:dead.letter.queue"/>
-    //   </route> 
-
-
-        // from("timer:foo?period=2000")
-        // .transform().method("myTransformer")
-        // .to("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092")
-        // .onException(RuntimeException.class).log("help!");
-
+        .log(LoggingLevel.ERROR, simple("${exception.message}").getText())
+        .log(LoggingLevel.ERROR, simple("${exception.stacktrace}").getText());
 
         from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092")
-//        .removeHeaders(".*")
         .log("Message received from Kafka : ${body}")
         .log("    on the topic ${headers[kafka.TOPIC]}")
         .log("    on the partition ${headers[kafka.PARTITION]}")
@@ -69,68 +54,29 @@ public class Route extends RouteBuilder {
         .log("    with the key ${headers[kafka.KEY]}")
         .log("    with the length ${headers[CamelFileLength]}")
         .log("    with the name ${headers[CamelFileName]}")
-//        .convertBodyTo(byte[].class)
         .setHeader(S3Constants.CONTENT_LENGTH, simple("${in.header.CamelFileLength}"))
-//        .setHeader(S3Constants.KEY, simple("${in.header.CamelFileNameOnly}"))
-                .setHeader(S3Constants.KEY, simple("entry-${date:now}.json"))
-        .to("aws-s3://rediverson-bucket?accessKey=AKIAITTPS3K73UKBHMEQ&secretKey=RAW(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)&region=" + Regions.US_EAST_1)
-        .onException(RuntimeException.class).log("Exception")
-        .log("${in.header.CamelFileNameOnly} succesfully uploaded to S3 bucket");
+        .setHeader(S3Constants.KEY, simple("entry-${date:now}.json"))
+        .to("aws-s3://rediverson-bucket?accessKey=XXXXXXXXX&secretKey=RAW(XXXXXXXXXX)&region=" + Regions.US_EAST_1)
+        .onException(RuntimeException.class).log("Exception");
 
 
         from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092")
-                .log("Message received from Kafka : ${body}")
-                .log("    on the topic ${headers[kafka.TOPIC]}")
-                .log("    on the partition ${headers[kafka.PARTITION]}")
-                .log("    with the offset ${headers[kafka.OFFSET]}")
-                .log("    with the key ${headers[kafka.KEY]}")
-                .log("    with the length ${headers[CamelFileLength]}")
-                .process((Exchange exchange) -> {
-                    // Map body = (Map) exchange.getIn()
-                    //                          .getBody();
+        .log("Message received from Kafka : ${body}")
+        .log("    on the topic ${headers[kafka.TOPIC]}")
+        .log("    on the partition ${headers[kafka.PARTITION]}")
+        .log("    with the offset ${headers[kafka.OFFSET]}")
+        .log("    with the key ${headers[kafka.KEY]}")
+        .log("    with the length ${headers[CamelFileLength]}")
+        .process((Exchange exchange) -> {
                 
-                    Map<String, AttributeValue> newBody = new HashMap();
-                    newBody.put("value", new AttributeValue((String)exchange.getIn().getBody()));
-                    newBody.put("pkey", new AttributeValue("millis:" + System.currentTimeMillis()));
-                
-                    // for(Object key : body.keySet()) {
-                    //     newBody.put(key.toString(), new AttributeValue(body.get(key).toString()));
-                    // }
-
+            Map<String, AttributeValue> newBody = new HashMap();
+            newBody.put("value", new AttributeValue((String)exchange.getIn().getBody()));
+            newBody.put("pkey", new AttributeValue("millis:" + System.currentTimeMillis()));
                     
-                    exchange.getIn().setHeader("CamelAwsDdbItem", newBody);
-                })                
-                .to("aws-ddb:rediverson-table?operation=PutItem&accessKey=XXXXXXXXXX&secretKey=RAW(XXXXXXXXXXX)&region=" + Regions.US_EAST_1)
-                .onException(RuntimeException.class).log("Exception")
-                .log("${in.header.CamelFileNameOnly} successfully uploaded to S3 bucket");
-        
-
-//;        .to("aws-s3://helloBucket?accessKey=yourAccessKey&secretKey=yourSecretKey&prefix=hello.txt")
-
-
-        // from("kafka:test?brokers=localhost:9092")
-        // .convertBodyTo(byte[].class)
-        // .setHeader(S3Constants.CONTENT_LENGTH, simple("${in.header.CamelFileLength}"))
-        // .setHeader(S3Constants.KEY,simple("${in.header.CamelFileNameOnly}"))
-        // .to("aws-s3://{{awsS3BucketName}}"
-        //                 + "?deleteAfterWrite=false&region=eu-west-1"
-        //                 + "&accessKey={{awsAccessKey}}"
-        //                 + "&secretKey=RAW({{awsAccessKeySecret}})")
-        // .log("done.");
-
-        // from("direct:start")
-        // .to("aws-ddb://domainName?amazonDDBClient=#client");
-
+            exchange.getIn().setHeader("CamelAwsDdbItem", newBody);
+        })                
+        .to("aws-ddb:rediverson-table?operation=PutItem&accessKey=XXXXXXXXXX&secretKey=RAW(XXXXXXXXXXX)&region=" + Regions.US_EAST_1)
+                .onException(RuntimeException.class).log("Exception");
+                
     }        
-    
-
-
-//    @Produces
-//    @Named("amazonS3Client")
-//    AmazonS3 amazonS3Client() {
-//        AWSCredentials credentials = new BasicAWSCredentials("XXXXX", "XXXXX");
-//        AWSCredentialsProvider credentialsProvider = new AWSStaticCredentialsProvider(credentials);
-//        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(Regions.US_WEST_1).withCredentials(credentialsProvider);
-//        return clientBuilder.build();
-//    }
 }
