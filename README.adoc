@@ -8,7 +8,7 @@ Example project using a REST endpoint to send messages to streams/kafka.  These 
 
 == Install streams using the cluster operator
 
-=== Create a project
+== Create a project
 After logging into openshift (minishift: oc login -u system:admin) via the cli create a new project  and the needed secret (https://docs.openshift.com/container-platform/3.11/install_config/configuring_red_hat_registry.html)
 ----
 oc new-project demo
@@ -59,6 +59,7 @@ oc apply -f streams/examples/topic/kafka-topic.yaml
 ----
 
 === Create the REST bridge
+If you've modifid the kafka condfiguration you may need to modify the `bootstrapservers` in https://github.com/rediverson/streams-int/blob/master/streams/examples/kafka-bridge/kafka-bridge.yaml[kafka-bridge.yaml]
 ----
 oc apply -f streams/examples/kafka-bridge/kafka-bridge.yaml
 ----
@@ -70,7 +71,7 @@ oc get pods -o name
 oc port-forward pod/my-bridge-bridge-8466dd8859-zq4sp 8080:8080 &
 ----
 
-== Test the bridge
+=== Test the bridge
 Use the base url of the node port followed by the `/topics/topic` to post messages to.
 ----
 curl -X POST   http://localhost:8080/topics/my-topic   -H 'content-type: application/vnd.kafka.json.v2+json'   -d '{
@@ -86,35 +87,15 @@ curl -X POST   http://localhost:8080/topics/my-topic   -H 'content-type: applica
 }'
 ----
 
-Verify messages
-create message consumer and subscription
+==== Verify results
+The HTTP response should contain the offsets for the messages like below.
 ----
-
-curl -X POST http://localhost:8080/consumers/rest-consumer-group \
-  -H 'content-type: application/vnd.kafka.v2+json' \
-  -d '{
-    "name": "rest-consumer",
-    "auto.offset.reset": "earliest",
-    "format": "json",
-    "enable.auto.commit": false,
-    "fetch.min.bytes": 512,
-    "consumer.request.timeout.ms": 30000
-  }'
-
-curl -X POST http://localhost:8080/consumers/rest-consumer-group/instances/rest-consumer/subscription \
-  -H 'content-type: application/vnd.kafka.v2+json' \
-  -d '{
-    "topics": [
-        "my-topic"
-    ]
-}'
+{"offsets":[{"partition":0,"offset":194},{"partition":0,"offset":195}]}
 ----
 
 
-----
-curl -X GET http://localhost:8080/consumers/rest-consumer-group/instances/rest-consumer/records \
-  -H 'accept: application/vnd.kafka.json.v2+json'
-----
+
+
 == Running within container
 
 Download your service account from https://access.redhat.com/terms-based-registry/ as an OpenShift secret and reference it below.  Note certain values below must be changed to me your environment
@@ -127,31 +108,32 @@ oc rsh perf-client-1-t7tn7
 cd /tmp/home/streams-perf/client/bin
 ----
 
-=== Modify Configuration
-Modify the `consumer.properties` and `producer.properties` to meet your environment configuration
-Use the fully qualified service addresses within openshift. Example below:
-----
-bootstrap.servers=https://my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
-----
-Remove all ssl settings
+== Create the fuse component
+=== Modify AWS credentials
+The Fuse routes must be modified to use AWS credentials
 
-=== Execute the producer performance test
+In the file https://github.com/rediverson/streams-int/blob/master/fuse/src/main/java/rediverson/Route.java[Route.java]
 
-Note: You must have kafka installed locally and its `bin` directory is included in the `PATH` environment variable
+* Replace twice `XXXXXXXXXX` with your AWS access Key
+* Replace twice `ZZZZZZZZZZ` with your AWS secret Key
+* Replace twice `Regions.US_EAST_1` with your AWS secret Key
+* S3
+** Replace `rediverson-bucket` with your S3 bucket
+* DynamoDb
+** Replace `rediverson-table` with your DynamoDB table.
+** `pkey` for the partition/primary key.  Adjust as needed.
+** `value` data value field. Adjust as needed.
 
-----
-./kafka-producer-perf-test.sh --producer.config producer.properties --throughput -1 --num-records 500000 --record-size 650000 --topic my-topic
-./kafka-consumer-perf-test.sh --consumer.config consumer.properties --topic my-topic --group my-group --messages 150000 --timeout 9999999999 --threads 20 --broker-list=https://my-cluster-kafka-0-kafka.apps.cluster-e6db.sandbox239.opentlc.com:443,https://my-cluster-kafka-1-kafka.apps.cluster-e6db.sandbox239.opentlc.com:443,https://my-cluster-kafka-2-kafka.apps.cluster-e6db.sandbox239.opentlc.com:443
+=== Deploy the fuse application
 
+NOTE: This step required the Red Hat repositories to be included in the maven `settings.xml` file
+
+Build and deploy the project to the Kubernetes / OpenShift cluster:
+----
+cd fuse
+mvn clean -DskipTests fabric8:deploy -Popenshift
 ----
 
-== Delete topics and clusters
-Delete topic, user and cluster with sample below
-----
-oc delete kafkauser my-user
-oc delete kafkatopic my-topic
-oc delete kafka my-cluster
-----
 
 
 

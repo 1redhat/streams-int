@@ -56,7 +56,7 @@ public class Route extends RouteBuilder {
         .log("    with the name ${headers[CamelFileName]}")
         .setHeader(S3Constants.CONTENT_LENGTH, simple("${in.header.CamelFileLength}"))
         .setHeader(S3Constants.KEY, simple("entry-${date:now}.json"))
-        .to("aws-s3://rediverson-bucket?accessKey=XXXXXXXXX&secretKey=RAW(XXXXXXXXXX)&region=" + Regions.US_EAST_1)
+        .to("aws-s3://rediverson-bucket?accessKey=XXXXXXXXXX&secretKey=RAW(ZZZZZZZZZZ)&region=" + Regions.US_EAST_1)
         .onException(RuntimeException.class).log("Exception");
 
 
@@ -75,7 +75,7 @@ public class Route extends RouteBuilder {
                     
             exchange.getIn().setHeader("CamelAwsDdbItem", newBody);
         })                
-        .to("aws-ddb:rediverson-table?operation=PutItem&accessKey=XXXXXXXXXX&secretKey=RAW(XXXXXXXXXXX)&region=" + Regions.US_EAST_1)
+        .to("aws-ddb:rediverson-table?operation=PutItem&accessKey=XXXXXXXXXX&secretKey=RAW(ZZZZZZZZZZ)&region=" + Regions.US_EAST_1)
                 .onException(RuntimeException.class).log("Exception");
                 
     }        
