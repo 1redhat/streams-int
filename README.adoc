@@ -93,21 +93,6 @@ The HTTP response should contain the offsets for the messages like below.
 {"offsets":[{"partition":0,"offset":194},{"partition":0,"offset":195}]}
 ----
 
-
-
-
-== Running within container
-
-Download your service account from https://access.redhat.com/terms-based-registry/ as an OpenShift secret and reference it below.  Note certain values below must be changed to me your environment
-----
-oc create -f my-service-account-pull-secret.yaml
-oc secrets link builder my-service-account-pull-secret
-oc new-app --name perf-client https://github.com/rediverson/streams-perf.git
-oc get pods
-oc rsh perf-client-1-t7tn7
-cd /tmp/home/streams-perf/client/bin
-----
-
 == Create the fuse component
 === Modify AWS credentials
 The Fuse routes must be modified to use AWS credentials
