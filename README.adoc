@@ -1,0 +1,154 @@
+= streams-int
+
+Example project using a REST endpoint to send messages to streams/kafka.  These messages are consumed from the kafka topic and sent to S3 and DynamoDB.  The project is based on openshift 3.11, Stream 1.3/7.5 and Fuse 7.2
+
+
+== Install streams using the cluster operator
+
+=== Create a project
+After logging into openshift (minishift: oc login -u system:admin) via the cli create a new project  and the needed secret (https://docs.openshift.com/container-platform/3.11/install_config/configuring_red_hat_registry.html)
+----
+oc new-project demo
+----
+
+=== Create a secret to access red hat repositories
+Follow https://docs.openshift.com/container-platform/3.11/install_config/configuring_red_hat_registry.html[link] instruructions to create a secret and save it to the file `secret.yaml`.  For the purpose of this example the secret is name 'demo-kafa' which can be found in the yaml file
+
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: demo-kafka
+----
+
+=== Create service accounts and link secrets
+----
+oc create -f secret.yaml -n demo
+oc create sa strimzi-cluster-operator
+oc create sa my-cluster-zookeeper
+oc create sa my-bridge-bridge
+
+oc secrets link default demo-kafka --for=pull
+oc secrets link builder demo-kafka
+
+oc secret link strimzi-cluster-operator demo-kafka  --for=pull
+oc secret link my-cluster-zookeeper demo-kafka  --for=pull
+oc secret link my-bridge-bridge demo-kafka  --for=pull
+----
+
+=== Create the cluster operator in the kafka project/namespace
+----
+oc apply -f streams/install/cluster-operator -n demo
+oc apply -f streams/examples/templates/cluster-operator -n demo
+----
+
+=== Install and configure kafka cluster
+
+==== Create the kafka cluster in the name space. 
+In this example we are using a single node kafka for development purposes
+----
+oc apply -f streams/examples/kafka/kafka-persistent-single.yaml
+----
+
+==== Create a topic (make sure the 3 zookeeper and 3 kafka pods are started)
+----
+oc apply -f streams/examples/topic/kafka-topic.yaml
+----
+
+=== Create the REST bridge
+----
+oc apply -f streams/examples/kafka-bridge/kafka-bridge.yaml
+----
+
+=== Create a node port
+Create a node port based on the bridge pod.  Use first command to find the name.  `my-bridge-bridge-8466dd8859-zq4sp` is just an example of the format.
+----
+oc get pods -o name
+oc port-forward pod/my-bridge-bridge-8466dd8859-zq4sp 8080:8080 &
+----
+
+== Test the bridge
+Use the base url of the node port followed by the `/topics/topic` to post messages to.
+----
+curl -X POST   http://localhost:8080/topics/my-topic   -H 'content-type: application/vnd.kafka.json.v2+json'   -d '{
+    "records": [
+        {
+            "key": "my-key",
+            "value": "sales-lead-0001"
+        },
+        {
+            "value": "sales-lead-0002"
+        }
+    ]
+}'
+----
+
+Verify messages
+create message consumer and subscription
+----
+
+curl -X POST http://localhost:8080/consumers/rest-consumer-group \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "name": "rest-consumer",
+    "auto.offset.reset": "earliest",
+    "format": "json",
+    "enable.auto.commit": false,
+    "fetch.min.bytes": 512,
+    "consumer.request.timeout.ms": 30000
+  }'
+
+curl -X POST http://localhost:8080/consumers/rest-consumer-group/instances/rest-consumer/subscription \
+  -H 'content-type: application/vnd.kafka.v2+json' \
+  -d '{
+    "topics": [
+        "my-topic"
+    ]
+}'
+----
+
+
+----
+curl -X GET http://localhost:8080/consumers/rest-consumer-group/instances/rest-consumer/records \
+  -H 'accept: application/vnd.kafka.json.v2+json'
+----
+== Running within container
+
+Download your service account from https://access.redhat.com/terms-based-registry/ as an OpenShift secret and reference it below.  Note certain values below must be changed to me your environment
+----
+oc create -f my-service-account-pull-secret.yaml
+oc secrets link builder my-service-account-pull-secret
+oc new-app --name perf-client https://github.com/rediverson/streams-perf.git
+oc get pods
+oc rsh perf-client-1-t7tn7
+cd /tmp/home/streams-perf/client/bin
+----
+
+=== Modify Configuration
+Modify the `consumer.properties` and `producer.properties` to meet your environment configuration
+Use the fully qualified service addresses within openshift. Example below:
+----
+bootstrap.servers=https://my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+----
+Remove all ssl settings
+
+=== Execute the producer performance test
+
+Note: You must have kafka installed locally and its `bin` directory is included in the `PATH` environment variable
+
+----
+./kafka-producer-perf-test.sh --producer.config producer.properties --throughput -1 --num-records 500000 --record-size 650000 --topic my-topic
+./kafka-consumer-perf-test.sh --consumer.config consumer.properties --topic my-topic --group my-group --messages 150000 --timeout 9999999999 --threads 20 --broker-list=https://my-cluster-kafka-0-kafka.apps.cluster-e6db.sandbox239.opentlc.com:443,https://my-cluster-kafka-1-kafka.apps.cluster-e6db.sandbox239.opentlc.com:443,https://my-cluster-kafka-2-kafka.apps.cluster-e6db.sandbox239.opentlc.com:443
+
+----
+
+== Delete topics and clusters
+Delete topic, user and cluster with sample below
+----
+oc delete kafkauser my-user
+oc delete kafkatopic my-topic
+oc delete kafka my-cluster
+----
+
+
+
