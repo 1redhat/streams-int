@@ -1,6 +1,9 @@
 = streams-int
 
-Example project using a REST endpoint to send messages to streams/kafka.  These messages are consumed from the kafka topic and sent to S3 and DynamoDB.  The project is based on openshift 3.11, Stream 1.3/7.5 and Fuse 7.2
+Example project using a REST endpoint to send messages to streams/kafka.  These messages are consumed from the kafka topic and sent to S3 and DynamoDB.  The project is based on openshift 3.11, Stream 1.3/7.5 and Fuse 7.2.
+
+* Kafka and REST bridge found in `streams` directory
+* Spring boot fuse component found in `fuse` directory.  Consumes from kafka and produces to S3 and DynamoDB.
 
 
 == Install streams using the cluster operator
