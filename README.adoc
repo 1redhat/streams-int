@@ -77,11 +77,11 @@ Use the base url of the node port followed by the `/topics/topic` to post messag
 curl -X POST   http://localhost:8080/topics/my-topic   -H 'content-type: application/vnd.kafka.json.v2+json'   -d '{
     "records": [
         {
-            "key": "my-key",
-            "value": "sales-lead-0001"
+            "key": "100",
+            "value": { "acct": "100", "age" : 5, "foo": "bar" }
         },
         {
-            "value": "sales-lead-0002"
+            "value": { "acct": "101", "age" : 10, "foo": "bar" }
         }
     ]
 }'
