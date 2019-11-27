@@ -78,10 +78,10 @@ curl -X POST   http://localhost:8080/topics/my-topic   -H 'content-type: applica
     "records": [
         {
             "key": "100",
-            "value": { "acct": "100", "age" : 5, "foo": "bar" }
+            "value": { "pkey": "100", "age" : 5, "foo": "bar" }
         },
         {
-            "value": { "acct": "101", "age" : 10, "foo": "bar" }
+            "value": { "pkey": "101", "age" : 10, "foo": "bar" }
         }
     ]
 }'
