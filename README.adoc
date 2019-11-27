@@ -111,7 +111,7 @@ In the file https://github.com/rediverson/streams-int/blob/master/fuse/src/main/
 
 === Deploy the fuse application
 
-NOTE: This step required the Red Hat repositories to be included in the maven `settings.xml` file
+NOTE: This step required the Red Hat repositories to be included in the maven `settings.xml` file.  Here is a sample settings https://gist.github.com/craigivy/418be6a62ab4f67e7885ade645eee7c4[file]
 
 Build and deploy the project to the Kubernetes / OpenShift cluster:
 ----
