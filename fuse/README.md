@@ -45,25 +45,3 @@ $ oc new-project MY_PROJECT_NAME
 ```
 $ mvn clean -DskipTests fabric8:deploy -Popenshift
 ```
-
-### Running the Quickstart on OpenShift Cluster without preinstalled images
-
-Following steps assume you already have a Kubernates / Openshift environment installed and relative tools like `oc`.
-If you have a single-node OpenShift cluster, such as `Minishift`, you can also deploy your quickstart there. 
-A single-node OpenShift cluster provides you with access to a cloud environment that is similar to a production environment.
-
-+ Log in and create your project / namespace:
-```
-$ oc login -u developer -p developer
-$ oc new-project MY_PROJECT_NAME
-```
-
-+ Import base images in your newly created project (MY_PROJECT_NAME):
-```
-$ oc import-image fis-java-openshift:2.0 --from=registry.access.redhat.com/jboss-fuse-6/fis-java-openshift:2.0 --confirm
-```
-
-+ Build and deploy the project to the OpenShift cluster:
-```
-$ mvn clean -DskipTests fabric8:deploy -Popenshift -Dfabric8.generator.fromMode=istag -Dfabric8.generator.from=MY_PROJECT_NAME/fis-java-openshift:2.0
-```
