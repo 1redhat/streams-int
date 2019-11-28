@@ -17,13 +17,14 @@
 
 package rediverson;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import org.springframework.stereotype.Component;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
-import org.springframework.stereotype.Component;
-import com.amazonaws.regions.Regions;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.component.aws.s3.S3Constants;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,32 +47,33 @@ public class Route extends RouteBuilder {
         .log(LoggingLevel.ERROR, simple("${exception.message}").getText())
         .log(LoggingLevel.ERROR, simple("${exception.stacktrace}").getText());
 
-        from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092")
+        from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092").routeId("S3Route")
         .log("Message received from Kafka : ${body}")
-        .log("    on the topic ${headers[kafka.TOPIC]}")
-        .log("    on the partition ${headers[kafka.PARTITION]}")
-        .log("    with the offset ${headers[kafka.OFFSET]}")
-        .log("    with the key ${headers[kafka.KEY]}")
-        .log("    with the length ${headers[CamelFileLength]}")
-        .log("    with the name ${headers[CamelFileName]}")
+        // .log("    on the topic ${headers[kafka.TOPIC]}")
+        // .log("    on the partition ${headers[kafka.PARTITION]}")
+        // .log("    with the offset ${headers[kafka.OFFSET]}")
+        // .log("    with the key ${headers[kafka.KEY]}")
         .setHeader(S3Constants.CONTENT_LENGTH, simple("${in.header.CamelFileLength}"))
         .setHeader(S3Constants.KEY, simple("entry-${date:now}.json"))
         .to("aws-s3://rediverson-bucket?accessKey=XXXXXXXXXX&secretKey=RAW(ZZZZZZZZZZ)&region=" + Regions.US_EAST_1)
         .onException(RuntimeException.class).log("Exception");
 
-
-        from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092")
+        from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092").routeId("DDBRoute")
         .log("Message received from Kafka : ${body}")
-        .log("    on the topic ${headers[kafka.TOPIC]}")
-        .log("    on the partition ${headers[kafka.PARTITION]}")
-        .log("    with the offset ${headers[kafka.OFFSET]}")
-        .log("    with the key ${headers[kafka.KEY]}")
-        .log("    with the length ${headers[CamelFileLength]}")
+        // .log("    on the topic ${headers[kafka.TOPIC]}")
+        // .log("    on the partition ${headers[kafka.PARTITION]}")
+        // .log("    with the offset ${headers[kafka.OFFSET]}")
+        // .log("    with the key ${headers[kafka.KEY]}")
+        .unmarshal()
+        .json(JsonLibrary.Gson, Map.class)
         .process((Exchange exchange) -> {
-                
+
+            Map body = (Map) exchange.getIn().getBody();
             Map<String, AttributeValue> newBody = new HashMap();
-            newBody.put("value", new AttributeValue((String)exchange.getIn().getBody()));
-            newBody.put("pkey", new AttributeValue("millis:" + System.currentTimeMillis()));
+
+            for(Object key : body.keySet()) {
+                newBody.put(key.toString(), new AttributeValue(body.get(key).toString()));
+            }            
                     
             exchange.getIn().setHeader("CamelAwsDdbItem", newBody);
         })                
