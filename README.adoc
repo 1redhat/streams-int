@@ -64,17 +64,17 @@ If you've modifid the kafka condfiguration you may need to modify the `bootstrap
 oc apply -f streams/examples/kafka-bridge/kafka-bridge.yaml
 ----
 
-=== Create a node port
-Create a node port based on the bridge pod.  Use first command to find the name.  `my-bridge-bridge-8466dd8859-zq4sp` is just an example of the format.
+=== Externalize the service 
+Create a route for the bridge service
 ----
-oc get pods -o name
-oc port-forward pod/my-bridge-bridge-8466dd8859-zq4sp 8080:8080 &
+oc expose service my-bridge-bridge-service
 ----
 
 === Test the bridge
-Use the base url of the node port followed by the `/topics/topic` to post messages to.
+Use the base url of the route followed by the `/topics/topic` to post messages to.
+Change my-bridge-bridge-service-demo.192.168.64.3.nip.io to your routes address.
 ----
-curl -X POST   http://localhost:8080/topics/my-topic   -H 'content-type: application/vnd.kafka.json.v2+json'   -d '{
+curl -X POST http://my-bridge-bridge-service-demo.192.168.64.3.nip.io/topics/my-topic -H 'content-type: application/vnd.kafka.json.v2+json'   -d '{
     "records": [
         {
             "key": "100",
@@ -92,6 +92,8 @@ The HTTP response should contain the offsets for the messages like below.
 ----
 {"offsets":[{"partition":0,"offset":194},{"partition":0,"offset":195}]}
 ----
+
+Note: if you would like to learn more about the bridge read the strimzi [https://strimzi.io/2019/11/05/exposing-http-bridge.html]blog and redhat [https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html-single/using_amq_streams_on_openshift/index#kafka-bridge-concepts-str] documentation.
 
 == Create the fuse component
 === Modify AWS credentials
