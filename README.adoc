@@ -45,15 +45,15 @@ oc apply -f streams/install/cluster-operator -n demo
 oc apply -f streams/examples/templates/cluster-operator -n demo
 ----
 
-=== Install and configure kafka cluster
+== Install and configure kafka
 
-==== Create the kafka cluster in the name space. 
+=== Create the kafka cluster in the name space. 
 In this example we are using a single node kafka for development purposes
 ----
 oc apply -f streams/examples/kafka/kafka-persistent-single.yaml
 ----
 
-==== Create a topic (make sure the 3 zookeeper and 3 kafka pods are started)
+=== Create a topic (make sure the 3 zookeeper and 3 kafka pods are started)
 ----
 oc apply -f streams/examples/topic/kafka-topic.yaml
 ----
@@ -72,7 +72,8 @@ oc expose service my-bridge-bridge-service
 
 === Test the bridge
 Use the base url of the route followed by the `/topics/topic` to post messages to.
-Change my-bridge-bridge-service-demo.192.168.64.3.nip.io to your routes address.
+Change my-bridge-bridge-service-demo.192.168.64.3.nip.io to the route address created above.
+
 ----
 curl -X POST http://my-bridge-bridge-service-demo.192.168.64.3.nip.io/topics/my-topic -H 'content-type: application/vnd.kafka.json.v2+json'   -d '{
     "records": [
@@ -87,13 +88,13 @@ curl -X POST http://my-bridge-bridge-service-demo.192.168.64.3.nip.io/topics/my-
 }'
 ----
 
-==== Verify results
+=== Verify results
 The HTTP response should contain the offsets for the messages like below.
 ----
 {"offsets":[{"partition":0,"offset":194},{"partition":0,"offset":195}]}
 ----
 
-Note: if you would like to learn more about the bridge read the strimzi [https://strimzi.io/2019/11/05/exposing-http-bridge.html]blog and redhat [https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html-single/using_amq_streams_on_openshift/index#kafka-bridge-concepts-str] documentation.
+Note: if you would like to learn more about the bridge read the strimzi https://strimzi.io/2019/11/05/exposing-http-bridge.html[blog] and redhat https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html-single/using_amq_streams_on_openshift/index#kafka-bridge-concepts-str[documentation].
 
 == Create the fuse component
 === Modify AWS credentials
@@ -120,7 +121,3 @@ Build and deploy the project to the Kubernetes / OpenShift cluster:
 cd fuse
 mvn clean -DskipTests fabric8:deploy -Popenshift
 ----
-
-
-
-
