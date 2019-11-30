@@ -55,7 +55,7 @@ public class Route extends RouteBuilder {
         // .log("    with the key ${headers[kafka.KEY]}")
         .setHeader(S3Constants.CONTENT_LENGTH, simple("${in.header.CamelFileLength}"))
         .setHeader(S3Constants.KEY, simple("entry-${date:now}.json"))
-        .to("aws-s3://rediverson-bucket?accessKey=XXXXXXXXXX&secretKey=RAW(ZZZZZZZZZZ)&region=" + Regions.US_EAST_1)
+        .to("aws-s3://{{awsS3BucketName}}?accessKey={{awsAccessKey}}&secretKey=RAW({{awsAccessSecretKey}})&region={{awsRegion}}")
         .onException(RuntimeException.class).log("Exception");
 
         from("kafka:my-topic?brokers=my-cluster-kafka-bootstrap.demo.svc.cluster.local:9092").routeId("DDBRoute")
@@ -77,7 +77,7 @@ public class Route extends RouteBuilder {
                     
             exchange.getIn().setHeader("CamelAwsDdbItem", newBody);
         })                
-        .to("aws-ddb:rediverson-table?operation=PutItem&accessKey=XXXXXXXXXX&secretKey=RAW(ZZZZZZZZZZ)&region=" + Regions.US_EAST_1)
+        .to("aws-ddb:{{awsDynamoDBTame}}?operation=PutItem&accessKey={{awsAccessKey}}&secretKey=RAW({{awsAccessSecretKey}})&region={{awsRegion}}")
                 .onException(RuntimeException.class).log("Exception");
                 
     }        

@@ -5,6 +5,8 @@ Example project using a REST endpoint to send messages to streams/kafka.  These 
 * Kafka and REST bridge found in `streams` directory
 * Spring boot fuse component found in `fuse` directory.  Consumes from kafka and produces to S3 and DynamoDB.
 
+* This sample uses the 
+
 
 == Install streams using the cluster operator
 
@@ -53,7 +55,7 @@ In this example we are using a single node kafka for development purposes
 oc apply -f streams/examples/kafka/kafka-persistent-single.yaml
 ----
 
-=== Create a topic (make sure the 3 zookeeper and 3 kafka pods are started)
+=== Create a topic (make sure the 1 zookeeper and 1 kafka pods are started)
 ----
 oc apply -f streams/examples/topic/kafka-topic.yaml
 ----
@@ -97,20 +99,11 @@ The HTTP response should contain the offsets for the messages like below.
 Note: if you would like to learn more about the bridge read the strimzi https://strimzi.io/2019/11/05/exposing-http-bridge.html[blog] and redhat https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html-single/using_amq_streams_on_openshift/index#kafka-bridge-concepts-str[documentation].
 
 == Create the fuse component
-=== Modify AWS credentials
-The Fuse routes must be modified to use AWS credentials
+=== Modify AWS credentials and other configuration
+The Fuse configuration must be modified to use your AWS information. 
 
-In the file https://github.com/rediverson/streams-int/blob/master/fuse/src/main/java/rediverson/Route.java[Route.java]
+In the https://github.com/rediverson/streams-int/blob/master/fuse/src/main/resources/application.properties[application.properties] change all the properties in the `AWS config` section based on the AWS Config you will be using.
 
-* Replace twice `XXXXXXXXXX` with your AWS access Key
-* Replace twice `ZZZZZZZZZZ` with your AWS secret Key
-* Replace twice `Regions.US_EAST_1` with your AWS secret Key
-* S3
-** Replace `rediverson-bucket` with your S3 bucket
-* DynamoDb
-** Replace `rediverson-table` with your DynamoDB table.
-** `pkey` for the partition/primary key.  Adjust as needed.
-** `value` data value field. Adjust as needed.
 
 === Deploy the fuse application
 
