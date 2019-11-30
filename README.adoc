@@ -114,3 +114,28 @@ Build and deploy the project to the Kubernetes / OpenShift cluster:
 cd fuse
 mvn clean -DskipTests fabric8:deploy -Popenshift
 ----
+
+=== Verify the applicaiton
+* Create you S3 bucket and DynamoDB table in AWS.  Make sure you use `pkey` for the partition key in the DynamoDB table.
+
+* Test the application using the following curl command:
+----
+curl -X POST http://my-bridge-bridge-service-demo.192.168.64.3.nip.io/topics/my-topic -H 'content-type: application/vnd.kafka.json.v2+json'   -d '{
+    "records": [
+        {
+            "key": "100",
+            "value": { "pkey": "100", "age" : 5, "foo": "bar" }
+        },
+        {
+            "value": { "pkey": "101", "age" : 10, "foo": "bar" }
+        }
+    ]
+}'
+----
+
+* The HTTP response should contain the offsets for the messages like below.
+----
+{"offsets":[{"partition":0,"offset":194},{"partition":0,"offset":195}]}
+----
+
+* Verify the records were added to the S3 bucket and DynamoDB table.
