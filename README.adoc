@@ -8,9 +8,9 @@ Example project using a REST endpoint to send messages to streams/kafka.  These 
 * This sample uses the 
 
 
-== Install streams using the cluster operator
+== Install the streams cluster operator
 
-== Create a project
+=== Create a project
 After logging into openshift (minishift: oc login -u system:admin) via the cli create a new project  and the needed secret (https://docs.openshift.com/container-platform/3.11/install_config/configuring_red_hat_registry.html)
 ----
 oc new-project demo
